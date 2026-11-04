@@ -1,0 +1,11 @@
+input_processing.c:68:13:enter_mode_1	8	static
+input_processing.c:85:13:enter_modify_mode	16	static
+input_processing.c:103:13:increment_temp_duration	8	static
+input_processing.c:116:13:commit_temp_duration	8	static
+input_processing.c:152:13:run_normal_traffic_fsm	8	static
+input_processing.c:211:13:run_modify_blink_fsm	8	static
+input_processing.c:222:13:process_button_mode	8	static
+input_processing.c:270:13:process_button_modify	8	static
+input_processing.c:317:13:process_button_set	8	static
+input_processing.c:352:6:fsm_init	8	static
+input_processing.c:357:6:fsm_for_input_processing	8	static

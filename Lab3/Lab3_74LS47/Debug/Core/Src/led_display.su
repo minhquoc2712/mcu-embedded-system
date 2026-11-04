@@ -1,0 +1,8 @@
+led_display.c:10:13:writeBCD74LS47	24	static
+led_display.c:28:6:clearAllTrafficLeds	8	static
+led_display.c:36:6:setRoad1Color	16	static
+led_display.c:55:6:setRoad2Color	16	static
+led_display.c:74:6:setModeBlinkLeds	16	static
+led_display.c:95:6:setConfirmLed	16	static
+led_display.c:101:6:update7SEGBuffer	24	static
+led_display.c:117:6:updateModeAux7SEG	24	static
