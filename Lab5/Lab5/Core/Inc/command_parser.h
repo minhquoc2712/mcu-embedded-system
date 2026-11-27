@@ -22,5 +22,6 @@ extern volatile uint8_t buffer_flag;
 extern volatile uint8_t command_flag;
 extern volatile CommandType command_data;
 void command_parser_fsm(void);
+void uart_rx_poll_rescue(void);
 
 #endif /* INC_COMMAND_PARSER_H_ */

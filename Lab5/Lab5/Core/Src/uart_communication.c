@@ -48,7 +48,10 @@ void uart_communication_fsm(ADC_HandleTypeDef *hadc, UART_HandleTypeDef *huart) 
 
     case COMM_SEND_ADC: {
         int len = sprintf(tx_buf, "\r\n!ADC=%lu#\r\n", (unsigned long)adc_value);
-        HAL_UART_Transmit(huart, (uint8_t *)tx_buf, (uint16_t)len, 1000);
+        for (int i = 0; i < len; i++) {
+            HAL_UART_Transmit(huart, (uint8_t *)&tx_buf[i], 1, 100);
+            uart_rx_poll_rescue();  // Khong bao gio mat ky tu go vao ngay trong luc dang in TX
+        }
         setTimer(0, 3000);  // Timeout 3 giay cho !OK#
         comm_state = COMM_WAIT_OK;
         break;

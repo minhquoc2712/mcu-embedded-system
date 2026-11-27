@@ -111,6 +111,15 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    // Moi 1 ms (nhanh hon 1 byte 9600 baud = 1.04 ms) kiem tra cuu byte RX neu ngat Proteus nghen
+    {
+        static uint32_t last_rx_tick = 0;
+        uint32_t now = HAL_GetTick();
+        if (now != last_rx_tick) {
+            last_rx_tick = now;
+            uart_rx_poll_rescue();
+        }
+    }
     if (buffer_flag == 1) {
         buffer_flag = 0;
         command_parser_fsm();
@@ -120,11 +129,6 @@ int main(void)
     if (isTimerExpired(1)) {
         HAL_GPIO_TogglePin(LED_YELLOW_GPIO_Port, LED_YELLOW_Pin);
         setTimer(1, 500);
-    }
-
-    // Luon giu ngat nhan RXNE cua USART2 bat lien tuc (khong bi tat giua cac byte)
-    if ((USART2->CR1 & USART_CR1_RXNEIE) == 0U) {
-        __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
     }
   }
   /* USER CODE END 3 */
@@ -320,6 +324,28 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void uart_rx_poll_rescue(void) {
+    uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+    uint32_t sr = USART2->SR;
+    if (sr & (USART_SR_RXNE | USART_SR_ORE | USART_SR_FE | USART_SR_NE | USART_SR_PE)) {
+        uint8_t rx_byte = (uint8_t)(USART2->DR & 0xFFU);
+        if (sr & USART_SR_RXNE) {
+            buffer[index_buffer++] = rx_byte;
+            if (index_buffer >= MAX_BUFFER_SIZE) {
+                index_buffer = 0;
+            }
+            buffer_flag = 1;
+        }
+        huart2.RxState = HAL_UART_STATE_READY;
+        HAL_UART_Receive_IT(&huart2, &temp, 1);
+    } else if (huart2.RxState == HAL_UART_STATE_READY || (USART2->CR1 & USART_CR1_RXNEIE) == 0U) {
+        huart2.RxState = HAL_UART_STATE_READY;
+        HAL_UART_Receive_IT(&huart2, &temp, 1);
+    }
+    __set_PRIMASK(primask);
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART2) {
         buffer[index_buffer++] = temp;
@@ -327,7 +353,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
             index_buffer = 0;
         }
         buffer_flag = 1;
-        __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
+        HAL_UART_Receive_IT(&huart2, &temp, 1);
     }
 }
 
@@ -344,7 +370,8 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
                 buffer_flag = 1;
             }
         }
-        __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
+        huart->RxState = HAL_UART_STATE_READY;
+        HAL_UART_Receive_IT(&huart2, &temp, 1);
     }
 }
 
