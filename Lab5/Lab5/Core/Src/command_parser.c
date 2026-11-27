@@ -21,8 +21,8 @@ volatile uint8_t buffer[MAX_BUFFER_SIZE];
 volatile uint8_t index_buffer = 0;
 volatile uint8_t buffer_flag = 0;
 
-uint8_t command_flag = 0;
-CommandType command_data = CMD_NONE;
+volatile uint8_t command_flag = 0;
+volatile CommandType command_data = CMD_NONE;
 
 static ParserState parser_state = PARSER_WAIT_START;
 static uint8_t read_index = 0;
@@ -30,7 +30,7 @@ static char cmd_buf[CMD_BUF_SIZE];
 static uint8_t cmd_len = 0;
 
 void command_parser_fsm(void) {
-    while (read_index != index_buffer) {
+    while (read_index != index_buffer && command_flag == 0) {
         uint8_t ch = buffer[read_index++];
         if (read_index >= MAX_BUFFER_SIZE) {
             read_index = 0;
@@ -51,8 +51,6 @@ void command_parser_fsm(void) {
                 if (cmd_len > 0) {
                     cmd_len--;  // Ho tro phim Backspace neu go nham
                 }
-            } else if (ch == '\r' || ch == '\n') {
-                // Bo qua phim Enter
             } else if (ch == '#') {
                 cmd_buf[cmd_len] = '\0';
                 if (strcmp(cmd_buf, "RST") == 0) {
@@ -62,19 +60,31 @@ void command_parser_fsm(void) {
                     command_data = CMD_OK;
                     command_flag = 1;
                 }
+                cmd_len = 0;
                 parser_state = PARSER_WAIT_START;
+            } else if (ch <= ' ' || ch > '~') {
+                // Bo qua Enter (\r, \n), khoang trang va ky tu dieu khien an
             } else {
+                if (ch >= 'a' && ch <= 'z') {
+                    ch = (uint8_t)(ch - 'a' + 'A');
+                }
                 if (cmd_len < CMD_BUF_SIZE - 1) {
                     cmd_buf[cmd_len++] = (char)ch;
                 } else {
+                    cmd_len = 0;
                     parser_state = PARSER_WAIT_START;
                 }
             }
             break;
 
         default:
+            cmd_len = 0;
             parser_state = PARSER_WAIT_START;
             break;
         }
+    }
+
+    if (read_index != index_buffer) {
+        buffer_flag = 1;  // Con byte chua doc trong ring buffer -> giu co cho vong sau
     }
 }

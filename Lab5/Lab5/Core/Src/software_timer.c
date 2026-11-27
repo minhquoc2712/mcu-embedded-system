@@ -16,6 +16,12 @@ void setTimer(int index, int duration_ms) {
     timer_flag[index] = (timer_counter[index] <= 0) ? 1 : 0;
 }
 
+void clearTimer(int index) {
+    if (index < 0 || index >= MAX_TIMERS) return;
+    timer_counter[index] = 0;
+    timer_flag[index] = 0;
+}
+
 int isTimerExpired(int index) {
     if (index < 0 || index >= MAX_TIMERS) return 0;
     if (timer_flag[index] == 1) {

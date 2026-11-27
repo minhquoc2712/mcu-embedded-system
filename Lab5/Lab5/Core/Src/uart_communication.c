@@ -21,17 +21,26 @@ static CommState comm_state = COMM_IDLE;
 static uint32_t adc_value = 0;
 static char tx_buf[32];
 
+static uint32_t read_adc_once(ADC_HandleTypeDef *hadc) {
+    uint32_t val = adc_value;
+    HAL_ADC_Start(hadc);
+    if (HAL_ADC_PollForConversion(hadc, 100) == HAL_OK) {
+        val = HAL_ADC_GetValue(hadc);
+    }
+    HAL_ADC_Stop(hadc);
+    return val;
+}
+
 void uart_communication_fsm(ADC_HandleTypeDef *hadc, UART_HandleTypeDef *huart) {
     switch (comm_state) {
     case COMM_IDLE:
         if (command_flag == 1) {
+            CommandType cmd = command_data;
+            command_data = CMD_NONE;
             command_flag = 0;
-            if (command_data == CMD_RST) {
-                HAL_ADC_Start(hadc);
-                if (HAL_ADC_PollForConversion(hadc, 100) == HAL_OK) {
-                    adc_value = HAL_ADC_GetValue(hadc);
-                }
-                HAL_ADC_Stop(hadc);
+
+            if (cmd == CMD_RST) {
+                adc_value = read_adc_once(hadc);
                 comm_state = COMM_SEND_ADC;
             }
         }
@@ -47,9 +56,18 @@ void uart_communication_fsm(ADC_HandleTypeDef *hadc, UART_HandleTypeDef *huart) 
 
     case COMM_WAIT_OK:
         if (command_flag == 1) {
+            CommandType cmd = command_data;
+            command_data = CMD_NONE;
             command_flag = 0;
-            if (command_data == CMD_OK) {
+
+            if (cmd == CMD_OK) {
+                clearTimer(0);
                 comm_state = COMM_IDLE;
+            } else if (cmd == CMD_RST) {
+                // Neu dang gui lap ma go !RST# moi -> doc lai ADC moi ngay
+                clearTimer(0);
+                adc_value = read_adc_once(hadc);
+                comm_state = COMM_SEND_ADC;
             }
         } else if (isTimerExpired(0)) {
             // Het 3s chua co !OK# -> gui lai DUNG gia tri adc_value cu
@@ -58,6 +76,7 @@ void uart_communication_fsm(ADC_HandleTypeDef *hadc, UART_HandleTypeDef *huart) 
         break;
 
     default:
+        clearTimer(0);
         comm_state = COMM_IDLE;
         break;
     }

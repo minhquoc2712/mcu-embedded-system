@@ -19,8 +19,8 @@ extern uint8_t temp;
 extern volatile uint8_t buffer[MAX_BUFFER_SIZE];
 extern volatile uint8_t index_buffer;
 extern volatile uint8_t buffer_flag;
-extern uint8_t command_flag;
-extern CommandType command_data;
+extern volatile uint8_t command_flag;
+extern volatile CommandType command_data;
 void command_parser_fsm(void);
 
 #endif /* INC_COMMAND_PARSER_H_ */

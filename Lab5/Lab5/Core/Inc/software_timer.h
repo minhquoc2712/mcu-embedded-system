@@ -10,6 +10,7 @@
 #define MAX_TIMERS   2
 #define TIMER_CYCLE  10  // 10 ms moi ngat TIM2
 void setTimer(int index, int duration_ms);
+void clearTimer(int index);
 int isTimerExpired(int index);
 void timerRun(void);
 
